@@ -3,6 +3,9 @@
 
 namespace stepMotor {
 
+    // Número de steps necessários para virar completamente a persiana
+    int fullTurnSteps = -26800;
+
     int currentStep = 0;
     int targetStep = 0;
 
@@ -37,9 +40,9 @@ namespace stepMotor {
 
             // Gira o motor 1 passo
             digitalWrite(STEP_PIN, HIGH);
-            delayMicroseconds(800);
+            delayMicroseconds(600);
             digitalWrite(STEP_PIN, LOW);
-            delayMicroseconds(800);
+            delayMicroseconds(600);
 
             // Desativa o driver
             digitalWrite(ENABLE_PIN, HIGH);
@@ -53,7 +56,7 @@ namespace stepMotor {
 
     // Incrementa o valor do targetstep
     void incrementStep(int steps, bool isLimited) {
-        int limit = 70;
+        int limit = 120;
         // Se mudar a direção do motor com targets acumulados ele reseta o target
         if ((targetStep-currentStep)*steps >= 0) {
             targetStep = targetStep + steps;
@@ -71,5 +74,10 @@ namespace stepMotor {
     void resetStep() {
         currentStep = 0;
         targetStep = 0;
+    }
+
+    // Returna o número de steps equivalente a porcentagem do fullTurnSteps
+    int blindPercentage(float percentage) {
+        return fullTurnSteps*percentage/100;
     }
 }
