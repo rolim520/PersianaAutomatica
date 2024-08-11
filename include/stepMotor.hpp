@@ -1,79 +1,51 @@
 #include <Arduino.h>
 #include <pinagem.hpp>
+#include <FastAccelStepper.h>
 
 namespace stepMotor {
 
     // Número de steps necessários para virar completamente a persiana
-    int fullTurnSteps = -26800;
+    int fullTurnSteps = -26600;
 
-    int currentStep = 0;
-    int targetStep = 0;
+    FastAccelStepperEngine engine = FastAccelStepperEngine();
+    FastAccelStepper *stepper = NULL;
 
     void initDriver() {
-        // Define os pinos como saída ou entrada
-        pinMode(STEP_PIN, OUTPUT);
-        pinMode(DIR_PIN, OUTPUT);
-        pinMode(ENABLE_PIN, OUTPUT);
-        pinMode(LED_PIN, OUTPUT);
+        engine.init();
+        stepper = engine.stepperConnectToPin(STEP_PIN);
 
-        // Desativa o driver
-        digitalWrite(ENABLE_PIN, HIGH);
-    }
+        if (stepper) {
+            stepper->setDirectionPin(DIR_PIN);
+            stepper->setEnablePin(ENABLE_PIN);
+            stepper->setAutoEnable(true);
 
-    // Acança um passo em direção ao target step
-    void executeStep() {
-        if (currentStep < targetStep) {
-            // Define a direção do motor
-            digitalWrite(DIR_PIN, HIGH);
-            // Atualiza o passo atual
-            currentStep++;
-        } else if (currentStep > targetStep) {
-            // Define a direção do motor
-            digitalWrite(DIR_PIN, LOW);
-            // Atualiza o passo atual
-            currentStep--;
-        }
+            // If auto enable/disable need delays, just add (one or both):
+            // stepper->setDelayToEnable(50);
+            // stepper->setDelayToDisable(1000);
 
-        if (currentStep != targetStep) {
-            // Ativa o driver
-            digitalWrite(ENABLE_PIN, LOW);
-
-            // Gira o motor 1 passo
-            digitalWrite(STEP_PIN, HIGH);
-            delayMicroseconds(600);
-            digitalWrite(STEP_PIN, LOW);
-            delayMicroseconds(600);
-
-            // Desativa o driver
-            digitalWrite(ENABLE_PIN, HIGH);
+            stepper->setSpeedInUs(750);  // the parameter is us/step !!!
+            stepper->setAcceleration(12800);
         }
     }
 
-    // Define o valor do target step
-    void updateTarget(int step) {
-        targetStep = step;
+    // Move para um numero de steps absoluto
+    void moveToPosition(int step){
+        // Move the stepper motor to the target step
+        stepper->moveTo(step);
     }
 
-    // Incrementa o valor do targetstep
-    void incrementStep(int steps, bool isLimited) {
-        int limit = 120;
-        // Se mudar a direção do motor com targets acumulados ele reseta o target
-        if ((targetStep-currentStep)*steps >= 0) {
-            targetStep = targetStep + steps;
-        } else {
-            targetStep = currentStep + steps;
-        }
-
-        // Limita o valor maximo de incremento de limite for verdadeiro
-        if (isLimited) {
-            targetStep = max(currentStep-limit, min(targetStep, currentStep+limit));
-        }
+    // Incrementa ou dcrementa o numero target de steps para o numero informado
+    void moveSteps(int steps) {
+        stepper->moveTo(stepper->getCurrentPosition() + steps);
     }
 
     // Reseta o valor do step
     void resetStep() {
-        currentStep = 0;
-        targetStep = 0;
+        stepper->forceStop();
+        while (stepper->isRunning()) {
+            // Pass
+        }
+        stepper->setCurrentPosition(0);
     }
 
     // Returna o número de steps equivalente a porcentagem do fullTurnSteps

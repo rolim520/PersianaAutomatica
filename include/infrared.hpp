@@ -5,6 +5,7 @@
 #define NEC_CODE_FASTFORWARD 0x40
 #define NEC_CODE_REWIND 0x44
 #define NEC_CODE_RESET_STEP 0x43
+#define NEC_CODE_FULLBACK 0xD
 #define NEC_CODE_0 0x16
 #define NEC_CODE_1 0xC
 #define NEC_CODE_2 0x18
@@ -33,7 +34,7 @@ namespace infrared {
             // Somente guarda o sinal se for do protocolo NEC ou não tiver erros de paridade
             if ((IrReceiver.decodedIRData.protocol == NEC) and (IrReceiver.decodedIRData.flags != IRDATA_FLAGS_PARITY_FAILED)){
                 decodedCmd = IrReceiver.decodedIRData.command;
-                // Serial.println(decodedCmd, HEX);
+                Serial.println(decodedCmd, HEX);
             }
         }
         IrReceiver.resume(); // Enable receiving of the next value
