@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <pinagem.hpp>
+#include <persistencia.hpp>
 #include <FastAccelStepper.h>
 
 namespace stepMotor {
@@ -46,6 +47,16 @@ namespace stepMotor {
             // Pass
         }
         stepper->setCurrentPosition(0);
+    }
+
+    // Define o valor da current position de steps
+    void setPosicaoSteps(int position) {
+        stepper->setCurrentPosition(position);
+    }
+
+    // Obtém o valor da current position de steps
+    int getPosicaoSteps() {
+        return stepper->getCurrentPosition();
     }
 
     // Returna o número de steps equivalente a porcentagem do fullTurnSteps

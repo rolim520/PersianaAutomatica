@@ -4,6 +4,7 @@
 #include <stepMotor.hpp>
 #include <infrared.hpp>
 #include <lightSensor.hpp>
+#include <persistencia.hpp>
 #include <timeSync.hpp>
 
 // Executa a leitura do sensor em uma task separada
@@ -12,6 +13,21 @@ void taskLeituraSensor(void *args) {
     for(;;) {
         lightSensor::readSensor();
         Serial.println("Sensor value: " + String(lightSensor::sensorValue));
+        vTaskDelay(xDelay);
+        // Serial.println("Sensor, Core: " + String(xPortGetCoreID()));
+    }
+}
+
+// Executa a leitura do sensor em uma task separada
+void taskGuardarSteps(void *args) {
+    const TickType_t xDelay = 100 / portTICK_PERIOD_MS;
+    int stepGuardado = persistenciaDeDados::readSteps();
+    for(;;) {
+        int stepAtual = stepMotor::getPosicaoSteps();
+        if (stepAtual != stepGuardado) {
+            persistenciaDeDados::storeSteps(stepAtual);
+            stepGuardado = stepAtual;
+        }
         vTaskDelay(xDelay);
         // Serial.println("Sensor, Core: " + String(xPortGetCoreID()));
     }
@@ -44,8 +60,16 @@ void setup() {
     // Inicializa a comunicação serial
     Serial.begin(9600);
 
+    persistenciaDeDados::initMemoria();
+
     // Inicializa o driver do motor de passo
     stepMotor::initDriver();
+
+    // Tenta ler os steps guardados no json
+    int steps = persistenciaDeDados::readSteps();
+    if (steps != ERROR_VALUE) {
+        stepMotor::setPosicaoSteps(persistenciaDeDados::readSteps());
+    }
 
     // Inicializa o receptor de infravermelho
     infrared::initIR();
@@ -56,6 +80,7 @@ void setup() {
     // Cria as tasks
     // xTaskCreate(taskLeituraSensor, "Leitura Sensor", 4096, NULL, 4, NULL);
     xTaskCreate(taskVerificarTempo, "Verificar Tempo", 4096, NULL, 4, NULL);
+    xTaskCreate(taskGuardarSteps, "Guardar Steps", 4096, NULL, 4, NULL);
 }
 
 void loop() {
